@@ -1,0 +1,12 @@
+[Unit]
+Description=Embedded Edge Gateway
+After=network.target
+
+[Service]
+ExecStart=/opt/edge_gateway/bin/edge_gateway
+Restart=on-failure
+RestartSec=2
+WorkingDirectory=/opt/edge_gateway
+
+[Install]
+WantedBy=multi-user.target
