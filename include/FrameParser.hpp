@@ -1,6 +1,7 @@
 #ifndef FRAME_PARSER_HPP
 #define FRAME_PARSER_HPP
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -17,11 +18,12 @@
 class FrameParser
 {
 public:
+    /* Atomics: the monitor thread reads these while the RX thread feeds. */
     struct Stats
     {
-        uint64_t framesOk  = 0;
-        uint64_t crcErrors = 0;
-        uint64_t resyncs   = 0; // bad version or impossible LEN
+        std::atomic<uint64_t> framesOk{0};
+        std::atomic<uint64_t> crcErrors{0};
+        std::atomic<uint64_t> resyncs{0}; // bad version or impossible LEN
     };
 
     using Callback = std::function<void(const protocol::Frame &)>;

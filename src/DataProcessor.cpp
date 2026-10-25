@@ -22,6 +22,11 @@ void DataProcessor::handle(const protocol::Frame &frame)
     last_ = data;
     ++processed_;
 
+    if (sink_)
+    {
+        sink_(data);
+    }
+
     char line[128];
     std::snprintf(line, sizeof(line),
                   "ts=%u s1=%.2f s2=%.2f status=0x%04X",
