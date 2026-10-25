@@ -1,6 +1,8 @@
 #ifndef SERIAL_PORT_HPP
 #define SERIAL_PORT_HPP
 
+#include <cstddef>
+#include <cstdint>
 #include <string>
 
 #include <sys/types.h>
