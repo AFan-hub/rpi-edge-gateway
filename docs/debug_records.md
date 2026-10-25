@@ -126,6 +126,23 @@ Performance counter stats (6.007 s elapsed):
 3. 启动失败触发 systemd 启动熔断（`Start request repeated too quickly`）
    → deploy.sh 增加 `systemctl reset-failed`
 
+### 客户端异常断开
+
+```
+[11706.582] [INFO ] client disconnected, fd=7 remaining=0
+[11730.195] [INFO ] client connected, fd=7 total=1
+```
+
+客户端闪断后网关不重启、监听不中断，重连即恢复转发（epoll 多客户端语义）。
+
+## Day 18：压力测试（部分执行）
+
+- 10 Hz 真机连续运行：1751+ 帧零 CRC 错误、零重同步、队列零堆积、零丢帧
+- 三客户端并发（真实链路）：完全同步，零丢
+- CPU：perf 实测 0.7%（6 s 窗）
+- **100 Hz 加速压测（10 ms 周期，~10k 帧）用户侧硬件拆装不便，未执行**，
+  记录于此，不在简历/README 中声称该指标
+
 ## 真机部署切换（接 STM32 前）
 
 ```bash

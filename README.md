@@ -58,3 +58,7 @@ python3 scripts/serial_simulator.py /dev/pts/M --frames 300 --corrupt 0.02
   (see docs/debug_records.md)
 - [x] Day 15-16: real-link integration - STM32 frames (10 Hz, crc_err=0
   over 1751 frames) through /dev/ttyUSB0 to TCP; 3 concurrent clients PASS
+- [x] Day 17: fault injection - USB unplug/replug recovers in-process
+  (same PID, stable by-id path), client drop/reconnect, systemd restart
+- [ ] Day 18: 100 Hz accelerated stress (deferred; 10 Hz baseline and
+  multi-client runs recorded in docs/debug_records.md)
