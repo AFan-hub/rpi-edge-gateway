@@ -88,6 +88,20 @@ Performance counter stats (6.007 s elapsed):
 - 语义备注：SIGTERM（优雅停）退出码 0，systemd 判定正常停止、不重启；
   SIGKILL 才走 on-failure——与设计一致
 
+## Day 15-16：真机联调（STM32 → Pi → PC，2026-10-25）
+
+链路：STM32F407 USART2(PA2/PA3) → CH340G → Pi `/dev/ttyUSB0` → epoll → TCP。
+
+- STM32 固件 `[fw D3c]`：USART2 纯协议帧（日志镜像已退役）
+- Pi journal（真实数据，10Hz）：
+  ```
+  ts=216607 s1=53.02 s2=14.33 status=0x0000
+  [monitor] fps=10.0 frames=1751 crc_err=0 resync=0 queue=0 clients=1 processed=1751
+  ```
+  **1751 帧零 CRC 错、零重同步**；s1=光敏 48~57%，s2=片内温度 ~14°C（冷房间）
+- PC 侧 TCP 客户端 `tcp_client.py --text`：连续 10Hz `[data]` 行，端到端闭环
+- 三客户端并发（真实链路，8 秒）：各 81 行/3969 字节，`VERDICT: PASS`
+
 ## 真机部署切换（接 STM32 前）
 
 ```bash

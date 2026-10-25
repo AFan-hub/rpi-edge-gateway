@@ -56,3 +56,5 @@ python3 scripts/serial_simulator.py /dev/pts/M --frames 300 --corrupt 0.02
 - [x] Day 13: Monitor statistics line (fps / crc errors / queue depth / clients)
 - [x] Day 14: systemd deploy scripts + GDB/Valgrind/strace/perf records
   (see docs/debug_records.md)
+- [x] Day 15-16: real-link integration - STM32 frames (10 Hz, crc_err=0
+  over 1751 frames) through /dev/ttyUSB0 to TCP; 3 concurrent clients PASS
