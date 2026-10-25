@@ -27,6 +27,7 @@ public:
     ssize_t writeData(const uint8_t *buf, size_t len);
 
     int fd() const { return fd_; }
+    bool isOpen() const { return fd_ >= 0; }
 
 private:
     int fd_ = -1;

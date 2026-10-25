@@ -20,6 +20,8 @@ install -m 0644 systemd/edge_gateway.service /etc/systemd/system/edge_gateway.se
 
 systemctl daemon-reload
 systemctl enable edge_gateway
+# clear a start-rate-limit lockout from earlier failed attempts
+systemctl reset-failed edge_gateway 2>/dev/null || true
 systemctl restart edge_gateway || true
 
 sleep 1

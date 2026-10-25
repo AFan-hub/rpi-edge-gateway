@@ -102,6 +102,30 @@ Performance counter stats (6.007 s elapsed):
 - PC 侧 TCP 客户端 `tcp_client.py --text`：连续 10Hz `[data]` 行，端到端闭环
 - 三客户端并发（真实链路，8 秒）：各 81 行/3969 字节，`VERDICT: PASS`
 
+## Day 17：故障注入（真实链路，2026-10-25）
+
+### 拔插 USB-UART（进程内自愈）
+
+```
+[11423.379] [WARN ] serial device gone (/dev/serial/by-id/usb-1a86_USB_Serial-if00-port0), closing for retry
+[11428.379] [WARN ] waiting for serial device: /dev/serial/by-id/usb-1a86_USB_Serial-if00-port0
+[11433.380] [WARN ] waiting for serial device: ...
+[11436.396] [INFO ] serial device reopened: /dev/serial/by-id/usb-1a86_USB_Serial-if00-port0
+[11436.482] [INFO ] ts=504807 s1=56.49 s2=12.01 status=0x0000   ← 数据立即恢复
+```
+
+- 断线 13 秒期间网关存活（monitor 持续 `fps=0.0`），**Main PID 82623 全程不变**
+- 断线期间的 STM32 帧按设计丢弃（ts 489707 → 504807 跳变可证）
+
+### 故障注入暴露并修复的三个真问题
+
+1. `VMIN=0` 的 tty 上 `read()==0` 同时表示"空闲"与"拔线"，无法据此判 EOF
+   → 改为**设备节点存在性探针**（空闲 >2 s 且 by-id 路径消失才判定拔线）
+2. USB 重插后设备号漂移（ttyUSB0 → ttyUSB1）
+   → systemd 单元改用稳定路径 `/dev/serial/by-id/usb-1a86_USB_Serial-if00-port0`
+3. 启动失败触发 systemd 启动熔断（`Start request repeated too quickly`）
+   → deploy.sh 增加 `systemctl reset-failed`
+
 ## 真机部署切换（接 STM32 前）
 
 ```bash

@@ -7,6 +7,8 @@
 #include <cstring>
 #include <thread>
 
+#include <unistd.h>   // access() for the unplug liveness probe
+
 #include "DataProcessor.hpp"
 #include "FrameParser.hpp"
 #include "Logger.hpp"
@@ -78,8 +80,35 @@ int main(int argc, char **argv)
     std::thread rxThread([&] {
         uint8_t buf[512];
 
+        /* Idle-vs-unplug disambiguation: with O_NONBLOCK + VMIN=0 a tty
+         * returns 0 both when idle and after the device vanished, so the
+         * decision is made on the device node itself: no bytes for >2 s
+         * AND the by-id path is gone => unplugged. */
+        auto lastRx = std::chrono::steady_clock::now();
+        auto lastNodeCheck = lastRx;
+
         while (g_running.load())
         {
+            if (!port_dev.isOpen())
+            {
+                /* Hot-plug recovery (Day 17): a yanked USB-UART must not
+                 * kill the gateway. Retry every second until the device
+                 * comes back or we are asked to stop. */
+                if (!port_dev.openPort())
+                {
+                    static int fails = 0;
+                    if (++fails % 5 == 1)   // log every ~5 s, not every retry
+                    {
+                        logging::warn(std::string("waiting for serial device: ") +
+                                      device);
+                    }
+                    std::this_thread::sleep_for(std::chrono::seconds(1));
+                    continue;
+                }
+                logging::info("serial device reopened: " + std::string(device));
+                lastRx = std::chrono::steady_clock::now();
+            }
+
             const ssize_t n = port_dev.readData(buf, sizeof(buf));
 
             if (n > 0)
@@ -87,16 +116,32 @@ int main(int argc, char **argv)
                 /* One read() may hold half a frame or three frames:
                  * the parser, not this loop, owns frame boundaries. */
                 parser.feed(buf, static_cast<size_t>(n));
+                lastRx = std::chrono::steady_clock::now();
             }
             else if (n == 0 || errno == EAGAIN || errno == EWOULDBLOCK)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+                auto now = std::chrono::steady_clock::now();
+
+                if (now - lastRx > std::chrono::seconds(2) &&
+                    now - lastNodeCheck > std::chrono::milliseconds(500))
+                {
+                    lastNodeCheck = now;
+
+                    if (::access(device, F_OK) != 0)
+                    {
+                        logging::warn(std::string("serial device gone (") +
+                                      device + "), closing for retry");
+                        port_dev.closePort();
+                    }
+                }
             }
             else
             {
-                logging::error(std::string("serial read error: ") +
-                               std::strerror(errno));
-                break;
+                logging::warn(std::string("serial read error: ") +
+                              std::strerror(errno) + " - closing for retry");
+                port_dev.closePort();
             }
         }
     });
