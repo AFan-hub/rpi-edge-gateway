@@ -6,10 +6,13 @@ cd "$(dirname "$0")/.."
 
 APP_DIR=/opt/edge_gateway
 
-if [ ! -x build/edge_gateway ]; then
+if [ ! -f build/edge_gateway ]; then
     echo "build/edge_gateway missing - run cmake build first" >&2
     exit 1
 fi
+
+# tar copies from Windows can drop the exec bit; harmless to re-assert it.
+chmod +x build/edge_gateway
 
 install -d "$APP_DIR/bin" "$APP_DIR/config"
 install -m 0755 build/edge_gateway "$APP_DIR/bin/edge_gateway"
